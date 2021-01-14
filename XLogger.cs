@@ -67,7 +67,7 @@ public static class XLogger
             this.SaveFileName = string.Format("{0}.log", DateTime.Now.ToString("yyyyMMddhhmmss"));
             this.SaveFileFullName = Path.Combine(SaveFolder, SaveFileName);
             this.CacheSize = cacheSize;
-            this.stream = File.OpenWrite(SaveFileFullName);
+            this.stream = File.Open(this.SaveFileFullName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
             this.sw = new StreamWriter(this.stream);
         }
         public void Init_SetEditorConsole()
