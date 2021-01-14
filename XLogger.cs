@@ -9,7 +9,11 @@ public static class XLogger
     private static XLogHandler s_logger = new XLogHandler();
     public static ILogger logger { get => s_logger; }
 
-    public static bool IsOutEditor { get => s_logger.IsOutEditor; }
+    public static bool IsOutEditor
+    {
+        get => s_logger.IsOutEditor;
+        set => s_logger.IsOutEditor = value;
+    }
     public static bool IsOutFile { get => s_logger.IsOutFile; }
 
     public static string SaveFolder { get => s_logger.SaveFolder; }
@@ -18,19 +22,16 @@ public static class XLogger
 
     public static void Init_SetOutFile(string folder, int cacheSize = 5)
     {
-        s_logger.Init_SetOutFile(folder, cacheSize);
+        s_logger = new XLogHandler(folder, cacheSize);
     }
-    public static void Init_SetOutEditor()
+    public static void Init()
     {
-        s_logger.Init_SetEditorConsole();
+        s_logger = new XLogHandler();
     }
-    public static void Init_Done()
+    public static void Dispose()
     {
-        s_logger.Init_Done();
-    }
-    public static void Close()
-    {
-        s_logger.Dispose();
+        s_logger?.Dispose();
+        s_logger = null;
     }
 
     public static void Log(object message) => s_logger.Log(message);
@@ -40,7 +41,7 @@ public static class XLogger
 
     public class XLogHandler : ILogger, ILogHandler, IDisposable
     {
-        public bool IsOutEditor { get; set; } = false;
+        public bool IsOutEditor { get; set; } = true;
         public bool IsOutFile { get; set; } = false;
 
         public string SaveFolder { get; private set; }
@@ -56,7 +57,7 @@ public static class XLogger
         public bool logEnabled { get; set; }
         public LogType filterLogType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-        public void Init_SetOutFile(string folder, int cacheSize)
+        private void Internel_SetOutFile(string folder, int cacheSize)
         {
             this.IsOutFile = true;
 
@@ -70,13 +71,14 @@ public static class XLogger
             this.stream = File.Open(this.SaveFileFullName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
             this.sw = new StreamWriter(this.stream);
         }
-        public void Init_SetEditorConsole()
+
+        public XLogHandler()
         {
-            this.IsOutEditor = true;
         }
-        public void Init_Done()
+        public XLogHandler(string folder, int cacheSize)
         {
-            Application.quitting += Application_quitting;
+            this.Internel_SetOutFile(folder, cacheSize);
+            Application.quitting += this.Application_quitting;
         }
 
         private void Application_quitting()
@@ -228,7 +230,14 @@ public static class XLogger
 
         public void Dispose()
         {
+            this.sw?.Flush();
             this.stream?.Close();
+            this.sw = null;
+            this.stream = null;
+        }
+        ~XLogHandler()
+        {
+            this.Dispose();
         }
     }
 }
